@@ -1,0 +1,1007 @@
+/* Base styles and reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    background-color: #F9FAFB;
+    color: #1F2937;
+}
+
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Desktop sidebar styles (will be hidden on mobile) */
+.sidebar {
+    width: 250px;
+    background-color: #1F2937;
+    color: #F9FAFB;
+    padding: 20px 0;
+    position: fixed;
+    height: 100vh;
+    left: 0;
+    top: 0;
+    z-index: 20;
+}
+
+.sidebar-header {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid #374151;
+}
+
+.sidebar-menu {
+    list-style: none;
+    padding: 20px 0;
+}
+
+.sidebar-menu li {
+    padding: 10px 20px;
+    margin-bottom: 5px;
+}
+
+.sidebar-menu li.active {
+    background-color: #2563EB;
+}
+
+.sidebar-menu a {
+    color: #F9FAFB;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+}
+
+.sidebar-menu a i {
+    margin-right: 10px;
+    width: 20px;
+}
+
+/* Main content styles */
+.main-content {
+    flex: 1;
+    margin-left: 250px;
+    padding: 20px;
+    padding-bottom: 80px; /* Space for mobile bottom tabs */
+}
+
+/* Mobile bottom tabs (hidden on desktop) */
+.mobile-tabs {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: #FFFFFF;
+    border-top: 1px solid #E5E7EB;
+    z-index: 30;
+    height: 64px; /* Aumentado para dar mais espaço */
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+}
+
+.mobile-tabs-menu {
+    display: flex;
+    justify-content: space-evenly; /* Alterado para space-evenly para distribuir melhor */
+    align-items: center;
+    height: 100%;
+    padding: 0;
+    max-width: 500px;
+    margin: 0 auto;
+    width: 100%;
+    position: relative;
+}
+
+.mobile-tabs-menu::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background-color: #E5E7EB;
+}
+
+.mobile-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    height: 100%;
+    color: #4B5563; /* Cor mais escura para melhor contraste */
+    text-decoration: none;
+    font-size: 10px;
+    padding: 5px 0;
+    min-width: 0; /* Para permitir encolhimento dentro do flex */
+    touch-action: manipulation; /* Melhora resposta de toque */
+    -webkit-tap-highlight-color: transparent; /* Remove destaque ao tocar (Android) */
+    position: relative; /* Para posicionamento dos elementos internos */
+    width: 25%; /* Define largura fixa para cada item */
+    box-sizing: border-box;
+    margin: 0; /* Remove margens laterais */
+}
+
+.mobile-tab.active {
+    color: #2563EB;
+    position: relative;
+    font-weight: 500;
+}
+
+.mobile-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 30%;
+    right: 30%;
+    height: 3px;
+    background-color: #2563EB;
+    border-radius: 3px 3px 0 0;
+}
+
+.mobile-tab i {
+    font-size: 24px; /* Aumentei o tamanho do ícone */
+    margin-bottom: 4px;
+    display: block;
+    text-align: center;
+    width: 100%;
+}
+
+.mobile-tab span {
+    line-height: 1.2;
+    text-align: center;
+    width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 10px;
+    display: block;
+}
+
+/* Header styles */
+.header {
+    background-color: #FFFFFF;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 16px;
+}
+
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.header h1 {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.subtitle {
+    font-size: 16px;
+    color: #6B7280;
+}
+
+.refresh-button {
+    background: none;
+    border: none;
+    color: #2563EB;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+/* Filters styles */
+.filters-container {
+    background-color: #FFFFFF;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 16px;
+    overflow-x: auto;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.filter-button {
+    background-color: #F3F4F6;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #6B7280;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.filter-button.active {
+    background-color: #2563EB;
+    color: #FFFFFF;
+}
+
+.class-filters-container {
+    background-color: #FFFFFF;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 16px;
+    overflow-x: auto;
+}
+
+.class-filter-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.class-filter-button {
+    background-color: #F3F4F6;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #6B7280;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.class-filter-button.active {
+    background-color: #2563EB;
+    color: #FFFFFF;
+}/* Record card styles */
+.records-list {
+    padding: 8px 0;
+}
+
+.record-card {
+    background-color: #FFFFFF;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 12px;
+    overflow: hidden;
+}
+
+.student-card {
+    display: flex;
+    padding: 16px;
+    align-items: center;
+}
+
+.photo-container {
+    margin-right: 12px;
+}
+
+.student-photo {
+    width: 50px;
+    height: 50px;
+    border-radius: 25px;
+    background-color: #F3F4F6;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.student-info {
+    flex: 1;
+}
+
+.student-name {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.student-class {
+    font-size: 14px;
+    color: #6B7280;
+}
+
+.controls-container {
+    padding: 16px;
+    border-top: 1px solid #F3F4F6;
+}
+
+.meal-controls {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 16px;
+}
+
+.meal-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #F3F4F6;
+    padding: 12px 20px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    width: 45%;
+    font-size: 14px;
+    font-weight: 600;
+    color: #6B7280;
+}
+
+.meal-button.active {
+    background-color: #16A34A;
+    color: #FFFFFF;
+}
+
+.meal-button i {
+    margin-right: 8px;
+}
+
+.hours-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.hours-label {
+    font-size: 14px;
+    color: #6B7280;
+    margin-left: 8px;
+}
+
+.hours-controls {
+    display: flex;
+    align-items: center;
+}
+
+.hours-button {
+    background-color: #F3F4F6;
+    border: none;
+    border-radius: 6px;
+    padding: 8px;
+    margin: 0 4px;
+    cursor: pointer;
+}
+
+.hours-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1F2937;
+    margin: 0 12px;
+    min-width: 20px;
+    text-align: center;
+}
+
+.empty-container {
+    padding: 30px;
+    text-align: center;
+    color: #6B7280;
+    font-size: 16px;
+}
+
+.hidden {
+    display: none;
+}
+
+/* Modal styles */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal {
+    background-color: #FFFFFF;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+    padding: 16px;
+    border-bottom: 1px solid #E5E7EB;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-title {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    color: #6B7280;
+    padding: 5px 10px;
+    border-radius: 4px;
+    position: relative;
+    z-index: 200; /* Garantir que esteja em uma camada superior */
+}
+
+.close-button:hover {
+    background-color: #F3F4F6;
+    color: #EF4444;
+}
+
+.close-button:active {
+    background-color: #E5E7EB;
+}
+
+.modal-content {
+    padding: 16px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.label {
+    display: block;
+    font-size: 14px;
+    color: #6B7280;
+    margin-bottom: 6px;
+}
+
+.input {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #E5E7EB;
+    border-radius: 6px;
+}
+
+.modal-actions {
+    padding: 16px;
+    border-top: 1px solid #E5E7EB;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.cancel-button {
+    padding: 10px 16px;
+    border: 1px solid #E5E7EB;
+    border-radius: 6px;
+    background-color: #FFFFFF;
+    color: #6B7280;
+    font-weight: 600;
+    cursor: pointer;
+    position: relative;
+    z-index: 200; /* Garantir que esteja em uma camada superior */
+}
+
+.cancel-button:hover {
+    background-color: #F3F4F6;
+}
+
+.cancel-button:active {
+    background-color: #E5E7EB;
+}
+
+.save-button {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 6px;
+    background-color: #2563EB;
+    color: #FFFFFF;
+    font-weight: 600;
+    cursor: pointer;
+}/* Students page styles */
+.add-button {
+    background-color: #2563EB;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+.search-container {
+    display: flex;
+    align-items: center;
+    background-color: #FFFFFF;
+    padding: 12px 16px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 16px;
+}
+
+.search-container i {
+    color: #6B7280;
+    margin-right: 10px;
+}
+
+.search-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 16px;
+}
+
+.student-item {
+    position: relative;
+}
+
+.student-actions {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    display: flex;
+    gap: 8px;
+}
+
+.edit-button, .delete-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.edit-button i {
+    color: #2563EB;
+}
+
+.delete-button i {
+    color: #EF4444;
+}
+
+/* Calendar page styles */
+.calendar-container {
+    background-color: #FFFFFF;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.calendar-title {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.calendar-navigation {
+    display: flex;
+    gap: 8px;
+}
+
+.calendar-nav-button {
+    background: none;
+    border: 1px solid #E5E7EB;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+}
+
+.calendar-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.calendar-table th {
+    padding: 8px;
+    text-align: center;
+    font-weight: 600;
+    color: #6B7280;
+}
+
+.calendar-table td {
+    padding: 8px;
+    text-align: center;
+    height: 40px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.calendar-day {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+.calendar-day.other-month {
+    color: #D1D5DB;
+}
+
+.calendar-day.today {
+    background-color: #DBEAFE;
+    font-weight: 600;
+}
+
+.calendar-day.selected {
+    background-color: #2563EB;
+    color: #FFFFFF;
+    font-weight: 600;
+}
+
+.calendar-day-status {
+    display: flex;
+    gap: 2px;
+    margin-top: 4px;
+}
+
+.status-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+}
+
+.status-dot.lunch {
+    background-color: #16A34A;
+}
+
+.status-dot.dinner {
+    background-color: #EA580C;
+}
+
+.daily-summary {
+    background-color: #FFFFFF;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 16px;
+}
+
+.summary-header {
+    margin-bottom: 16px;
+}
+
+.summary-title {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.summary-date {
+    color: #6B7280;
+    font-size: 14px;
+}
+
+.summary-stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.stat-item {
+    flex: 1;
+    background-color: #F3F4F6;
+    padding: 16px;
+    border-radius: 8px;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.stat-label {
+    color: #6B7280;
+    font-size: 14px;
+}/* Report page styles */
+.report-controls {
+    background-color: #FFFFFF;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+}
+
+.month-selector, .year-selector {
+    display: flex;
+    align-items: center;
+}
+
+.month-selector label, .year-selector label {
+    margin-right: 8px;
+    font-size: 14px;
+    color: #6B7280;
+}
+
+.month-select, .year-input {
+    padding: 8px;
+    border: 1px solid #E5E7EB;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.generate-button, .export-button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.generate-button {
+    background-color: #2563EB;
+    color: #FFFFFF;
+}
+
+.export-button {
+    background-color: #10B981;
+    color: #FFFFFF;
+}
+
+.monthly-summary {
+    background-color: #FFFFFF;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 16px;
+}
+
+.report-table-container {
+    background-color: #FFFFFF;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow-x: auto;
+}
+
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.report-table th, .report-table td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid #E5E7EB;
+}
+
+.report-table th {
+    background-color: #F9FAFB;
+    font-weight: 600;
+    color: #4B5563;
+}
+
+.report-table tr:hover {
+    background-color: #F9FAFB;
+}
+
+/* Mobile Responsive styles */
+@media (max-width: 768px) {
+    .app-container {
+        display: block;
+    }
+    
+    .sidebar {
+        display: none; /* Hide sidebar on mobile */
+    }
+    
+    .main-content {
+        margin-left: 0;
+        padding: 10px;
+        padding-bottom: 80px; /* Aumentado para espaço suficiente acima da navbar */
+    }
+    
+    .mobile-tabs {
+        display: flex; /* Show bottom tabs on mobile */
+    }
+    
+    .header {
+        border-radius: 0;
+        margin: -10px -10px 16px;
+    }
+    
+    .filters-container,
+    .class-filters-container,
+    .calendar-container,
+    .daily-summary,
+    .report-controls,
+    .monthly-summary,
+    .report-table-container {
+        border-radius: 0;
+        margin-left: -10px;
+        margin-right: -10px;
+    }
+    
+    .meal-controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .meal-button {
+        width: 100%;
+    }
+    
+    .report-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .month-selector, .year-selector {
+        justify-content: space-between;
+    }
+    
+    .generate-button, .export-button {
+        justify-content: center;
+    }
+    
+    .summary-stats {
+        flex-direction: column;
+    }
+}
+
+/* iPhone specific styles for exact RN look and feel */
+@media (max-width: 428px) {
+    body {
+        font-size: 14px;
+    }
+    
+    .record-card,
+    .student-card {
+        border-radius: 8px;
+        margin-left: 10px;
+        margin-right: 10px;
+    }
+    
+    .header h1 {
+        font-size: 20px;
+    }
+    
+    .subtitle {
+        font-size: 14px;
+    }
+    
+    .filter-button,
+    .class-filter-button {
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+    
+    .hours-container {
+        flex-wrap: wrap;
+    }
+    
+    .calendar-table th {
+        font-size: 12px;
+    }
+    
+    .report-table th, .report-table td {
+        padding: 8px;
+        font-size: 12px;
+    }
+}
+
+/* Android specific adjustments */
+@media (max-width: 380px) {
+    .mobile-tab {
+        padding: 4px 0 3px;
+    }
+    
+    .mobile-tab i {
+        font-size: 20px;
+        margin-bottom: 2px;
+    }
+    
+    .mobile-tab span {
+        font-size: 9px;
+    }
+    
+    .mobile-tabs {
+        height: 58px;
+    }
+    
+    .main-content {
+        padding-bottom: 75px;
+    }
+}
+
+/* Ajustes específicos para telas muito pequenas */
+@media (max-width: 320px) {
+    .mobile-tabs {
+        height: 56px;
+    }
+    
+    .mobile-tab {
+        padding: 2px 0;
+    }
+    
+    .mobile-tab i {
+        font-size: 20px;
+        margin-bottom: 2px;
+    }
+    
+    .mobile-tab span {
+        font-size: 9px;
+    }
+    
+    .main-content {
+        padding-bottom: 70px;
+    }
+}
+
+/* Status de conexão */
+.connection-status {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #f44336;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    z-index: 1000;
+    max-width: 80%;
+    transition: all 0.3s ease;
+}
+
+.connection-status.hidden {
+    display: none;
+}
+
+.connection-status span {
+    flex: 1;
+    margin-right: 10px;
+    font-size: 14px;
+}
+
+.retry-button {
+    background-color: transparent;
+    border: 1px solid white;
+    color: white;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.retry-button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.retry-button i {
+    font-size: 14px;
+}
+
+/* Animação para o botão de reconexão */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.retry-button.spinning i {
+    animation: spin 1s linear infinite;
+}

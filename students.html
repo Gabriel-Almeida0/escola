@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#FFFFFF">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.gstatic.com https://*.googletagmanager.com; script-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.googletagmanager.com 'unsafe-inline'; style-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline'; font-src 'self' https://cdnjs.cloudflare.com data:; img-src 'self' https://*.googleapis.com https://*.gstatic.com data: blob:;">
+    <title>Alunos - Sistema de Registros Escolares</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Desktop Sidebar (hidden on mobile) -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>Escola App</h2>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="index.html"><i class="fas fa-home"></i> Registros Diários</a></li>
+                <li class="active"><a href="students.html"><i class="fas fa-user-graduate"></i> Alunos</a></li>
+                <li><a href="calendar.html"><i class="fas fa-calendar"></i> Calendário</a></li>
+                <li><a href="reports.html"><i class="fas fa-chart-bar"></i> Relatórios</a></li>
+            </ul>
+        </nav>
+
+        <main class="main-content">
+            <div class="header">
+                <div class="header-top">
+                    <h1>Alunos</h1>
+                    <button id="addStudentBtn" class="add-button">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="search-container">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" class="search-input" placeholder="Buscar por nome ou turma...">
+            </div>
+
+            <div class="students-list" id="studentsList">
+                <!-- Students will be added dynamically via JavaScript -->
+                <div class="empty-container hidden">
+                    <p>Nenhum aluno encontrado</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Mobile Bottom Tabs (visible only on mobile) -->
+        <nav class="mobile-tabs">
+            <div class="mobile-tabs-menu">
+                <a href="index.html" class="mobile-tab">
+                    <i class="fas fa-home"></i>
+                    <span>Registros</span>
+                </a>
+                <a href="students.html" class="mobile-tab active">
+                    <i class="fas fa-user-graduate"></i>
+                    <span>Alunos</span>
+                </a>
+                <a href="calendar.html" class="mobile-tab">
+                    <i class="fas fa-calendar"></i>
+                    <span>Calendário</span>
+                </a>
+                <a href="reports.html" class="mobile-tab">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Relatórios</span>
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Add/Edit Student Modal -->
+    <div id="studentModal" class="modal-backdrop hidden" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Adicionar Aluno</h2>
+                <button class="close-button" id="closeModalBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-content">
+                <form id="studentForm">
+                    <div class="form-group">
+                        <label for="studentName" class="label">Nome *</label>
+                        <input type="text" id="studentName" class="input" placeholder="Digite o nome do aluno" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="studentClass" class="label">Turma *</label>
+                        <input type="text" id="studentClass" class="input" placeholder="Digite a turma do aluno" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="studentPhoto" class="label">Foto (URL - opcional)</label>
+                        <input type="text" id="studentPhoto" class="input" placeholder="URL da foto do aluno">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-actions">
+                <button id="cancelBtn" class="cancel-button">Cancelar</button>
+                <button id="saveStudentBtn" class="save-button">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status de conexão -->
+    <div id="connectionStatus" class="connection-status hidden">
+        <span id="connectionMessage">Sem conexão com o Firebase</span>
+        <button id="retryConnection" class="retry-button">
+            <i class="fas fa-sync-alt"></i>
+        </button>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module">
+        // Import the functions you need from the SDKs
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+        import { getAuth } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
+        import { getStorage } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-storage.js";
+        
+        // Disponibilizar as importações globalmente
+        window.firebaseModules = {
+            initializeApp,
+            getFirestore,
+            getAuth,
+            getStorage
+        };
+    </script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/students.js"></script>
+    
+    <script>
+        // Manipulador de eventos de conexão
+        document.addEventListener('firestore-connected', function() {
+            const connectionStatus = document.getElementById('connectionStatus');
+            connectionStatus.classList.add('hidden');
+        });
+        
+        document.addEventListener('firestore-disconnected', function(event) {
+            const connectionStatus = document.getElementById('connectionStatus');
+            const connectionMessage = document.getElementById('connectionMessage');
+            connectionStatus.classList.remove('hidden');
+            
+            if (event.detail && event.detail.message) {
+                connectionMessage.textContent = `Erro: ${event.detail.message}`;
+            } else {
+                connectionMessage.textContent = 'Sem conexão com o Firebase';
+            }
+        });
+        
+        // Botão para tentar reconectar
+        document.getElementById('retryConnection').addEventListener('click', function() {
+            if (typeof checkFirestoreConnection === 'function') {
+                checkFirestoreConnection();
+            }
+        });
+    </script>
+</body>
+</html>
