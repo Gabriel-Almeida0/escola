@@ -28,6 +28,12 @@ document.addEventListener('DOMContentLoaded', function() {
     searchInput.addEventListener('input', filterStudents);
     addStudentBtn.addEventListener('click', openAddModal);
     
+    // Event listener para o campo de turma - remover espaços e converter para maiúsculas
+    studentClassInput.addEventListener('input', function() {
+        // Remove espaços e converte para maiúsculas
+        this.value = this.value.replace(/\s+/g, '').toUpperCase();
+    });
+    
     // Solução direta para o botão de fechar modal
     closeModalBtn.onclick = function() {
         studentModal.style.display = 'none';
@@ -65,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
             renderStudents();
         } catch (error) {
             console.error('Error loading students:', error);
-            alert('Não foi possível carregar os alunos');
+            showError('Não foi possível carregar os alunos', 'Erro');
             studentsList.innerHTML = '<div class="error-container"><p>Erro ao carregar alunos</p></div>';
         }
     }
@@ -175,11 +181,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     async function saveStudent() {
         const name = studentNameInput.value.trim();
-        const className = studentClassInput.value.trim();
+        const className = studentClassInput.value.trim().replace(/\s+/g, '').toUpperCase();
         const photo = studentPhotoInput.value.trim();
         
         if (!name || !className) {
-            alert('Nome e turma são obrigatórios');
+            showError('Nome e turma são obrigatórios', 'Campos obrigatórios');
             return;
         }
         
@@ -220,9 +226,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update filtered students and render
             filterStudents();
             closeModal();
+            showSuccess('Aluno salvo com sucesso!');
         } catch (error) {
             console.error('Error saving student:', error);
-            alert('Não foi possível salvar o aluno');
+            showError('Não foi possível salvar o aluno', 'Erro');
         }
     }
     
@@ -230,23 +237,56 @@ document.addEventListener('DOMContentLoaded', function() {
         const student = students.find(s => s.id === studentId);
         if (!student) return;
         
-        if (confirm(`Tem certeza que deseja excluir ${student.name}? Todos os registros deste aluno também serão excluídos.`)) {
-            deleteStudent(studentId);
-        }
+        showConfirm(
+            `Tem certeza que deseja excluir ${student.name}? Todos os registros deste aluno também serão excluídos.`,
+            'Confirmar exclusão',
+            () => {
+                deleteStudent(studentId);
+            }
+        );
     }
     
     async function deleteStudent(studentId) {
         try {
+            console.log(`Iniciando processo de exclusão do aluno: ${studentId}`);
+            
+            // Mostrar notificação de carregamento
+            const loadingNotification = showInfo('Excluindo aluno e seus registros...', 'Processando', 0);
+            
             await StorageService.deleteStudent(studentId);
+            
+            // Remover notificação de carregamento
+            if (loadingNotification && loadingNotification.parentNode) {
+                loadingNotification.classList.remove('show');
+                setTimeout(() => {
+                    if (loadingNotification.parentNode) {
+                        loadingNotification.remove();
+                    }
+                }, 300);
+            }
             
             // Update students array
             students = students.filter(s => s.id !== studentId);
             
             // Update filtered students and render
             filterStudents();
+            showSuccess('Aluno excluído com sucesso!');
         } catch (error) {
-            console.error('Error deleting student:', error);
-            alert('Não foi possível excluir o aluno');
+            console.error('Erro ao excluir aluno:', error);
+            
+            // Mensagem de erro mais específica
+            let errorMessage = 'Não foi possível excluir o aluno';
+            if (error.message) {
+                if (error.message.includes('ID inválido')) {
+                    errorMessage = 'ID do aluno inválido ou não encontrado';
+                } else if (error.message.includes('acesso negado') || error.message.includes('permission')) {
+                    errorMessage = 'Sem permissão para excluir este aluno';
+                } else if (error.message.includes('conexão') || error.message.includes('connection')) {
+                    errorMessage = 'Erro de conexão ao tentar excluir o aluno';
+                }
+            }
+            
+            showError(errorMessage, 'Erro na exclusão');
         }
     }
 });

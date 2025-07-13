@@ -2,51 +2,29 @@ class StorageService {
     // Students
     static async getStudents() {
         try {
-            try {
-                // Verifica se o Firebase está conectado - espera a inicialização
-                if (typeof isFirestoreConnected === 'function') {
-                    const connected = await isFirestoreConnected();
-                    if (!connected) {
-                        throw new Error("Firebase não está conectado");
-                    }
-                } else {
-                    throw new Error("Função isFirestoreConnected não encontrada");
-                }
-                
-                // Tenta buscar do Firebase primeiro com opções aprimoradas
-                const students = await fetchData('students', {
-                    orderBy: ['updatedAt', 'desc']
-                }, 1000);
-                console.log("Alunos carregados do Firebase:", students.length);
-                
-                // Salva no localStorage como backup
-                if (students.length > 0) {
-                    localStorage.setItem('students', JSON.stringify(students));
-                    localStorage.setItem('students_last_sync', new Date().toISOString());
-                }
-                
-                return students;
-            } catch (firebaseError) {
-                console.warn('Erro ao buscar alunos do Firebase, usando localStorage:', firebaseError);
-                // Fallback para localStorage
-                const studentsJson = localStorage.getItem('students');
-                const students = studentsJson ? JSON.parse(studentsJson) : [];
-                console.log(`Usando ${students.length} alunos do cache local`);
-                return students;
+            // Garantir que o banco de dados esteja inicializado
+            if (typeof initializeDatabase === 'function') {
+                await initializeDatabase();
+            } else {
+                throw new Error("Função initializeDatabase não encontrada");
             }
+            
+            // Buscar dados
+            const students = await fetchData('students', {
+                orderBy: ['updatedAt', 'desc']
+            }, 1000);
+            
+            console.log("Alunos carregados do banco de dados local:", students.length);
+            return students;
         } catch (error) {
-            console.error('Erro crítico ao obter alunos:', error);
+            console.error('Erro ao obter alunos:', error);
             return [];
         }
     }
 
     static async saveStudents(students) {
-        try {
-            localStorage.setItem('students', JSON.stringify(students));
-            localStorage.setItem('students_last_sync', new Date().toISOString());
-        } catch (error) {
-            console.error('Erro ao salvar alunos no localStorage:', error);
-        }
+        console.log("Função legada saveStudents chamada - sem efeito");
+        return true;
     }
 
     static async addStudent(student) {
@@ -58,32 +36,17 @@ class StorageService {
                 updatedAt: new Date().toISOString()
             };
             
-            // Tenta salvar no Firebase
+            // Salvar no banco de dados local
             const docId = await saveData('students', studentToSave);
             console.log(`Aluno adicionado com ID: ${docId}`);
             
-            // Atualizar o ID do estudante com o ID do documento do Firestore
+            // Atualizar o ID do estudante com o ID do documento
             const updatedStudent = { ...studentToSave, id: docId };
             
-            // Atualiza o cache local também
-            const students = await this.getStudents();
-            const newStudents = [...students, updatedStudent];
-            await this.saveStudents(newStudents);
-            
             return updatedStudent;
-        } catch (firebaseError) {
-            console.warn('Erro ao salvar aluno no Firebase, usando apenas localStorage:', firebaseError);
-            
-            // Gera um ID local
-            const localId = 'local_' + new Date().getTime() + '_' + Math.random().toString(36).substring(2, 9);
-            const studentWithId = { ...student, id: localId, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-            
-            // Fallback para localStorage
-            const students = await this.getStudents();
-            students.push(studentWithId);
-            await this.saveStudents(students);
-            
-            return studentWithId;
+        } catch (error) {
+            console.error('Erro ao salvar aluno:', error);
+            throw error;
         }
     }
 
@@ -95,119 +58,77 @@ class StorageService {
                 updatedAt: new Date().toISOString()
             };
             
-            // Tenta atualizar no Firebase
-            if (updatedStudent.id && !updatedStudent.id.startsWith('local_')) {
-                await updateData('students', updatedStudent.id, studentToUpdate);
-                console.log(`Aluno atualizado no Firebase: ${updatedStudent.id}`);
-                
-                // Atualiza o cache local também
-                const students = await this.getStudents();
-                const index = students.findIndex(s => s.id === updatedStudent.id);
-                if (index !== -1) {
-                    students[index] = studentToUpdate;
-                    await this.saveStudents(students);
-                }
-                
-                return studentToUpdate;
-            } else {
-                throw new Error("ID inválido ou local");
-            }
-        } catch (firebaseError) {
-            console.warn('Erro ao atualizar aluno no Firebase, usando localStorage:', firebaseError);
-            // Fallback para localStorage
-            const students = await this.getStudents();
-            const index = students.findIndex(s => s.id === updatedStudent.id);
-            if (index !== -1) {
-                students[index] = {
-                    ...updatedStudent,
-                    updatedAt: new Date().toISOString()
-                };
-                await this.saveStudents(students);
-            }
-            return updatedStudent;
+            // Atualizar no banco de dados local
+            await updateData('students', updatedStudent.id, studentToUpdate);
+            console.log(`Aluno atualizado: ${updatedStudent.id}`);
+            
+            return studentToUpdate;
+        } catch (error) {
+            console.error('Erro ao atualizar aluno:', error);
+            throw error;
         }
     }
 
     static async deleteStudent(studentId) {
         try {
-            // Verifica se é um ID local
-            if (studentId.startsWith('local_')) {
-                throw new Error("ID local, usando apenas localStorage");
+            console.log(`Iniciando exclusão do aluno com ID: ${studentId}`);
+            
+            if (!studentId) {
+                throw new Error("ID de aluno inválido");
             }
             
-            // Tenta excluir do Firebase
-            await deleteData('students', studentId);
-            console.log(`Aluno excluído do Firebase: ${studentId}`);
-            
-            // Também excluir os registros deste aluno
+            // Primeiro, excluir os registros deste aluno
             try {
+                console.log(`Buscando registros do aluno ${studentId} para exclusão`);
                 const records = await fetchData('daily_records', { where: ['studentId', '==', studentId] }, 1000);
+                console.log(`Encontrados ${records.length} registros para o aluno ${studentId}`);
                 
                 // Excluir cada registro do aluno
+                let deletedRecordsCount = 0;
                 for (const record of records) {
-                    await deleteData('daily_records', record.id);
-                    console.log(`Registro excluído: ${record.id}`);
+                    try {
+                        await deleteData('daily_records', record.id);
+                        console.log(`Registro excluído: ${record.id}`);
+                        deletedRecordsCount++;
+                    } catch (recordError) {
+                        console.error(`Erro ao excluir registro ${record.id}:`, recordError);
+                    }
                 }
-            } catch (error) {
-                console.warn('Erro ao excluir registros do aluno:', error);
+                console.log(`${deletedRecordsCount} de ${records.length} registros excluídos para o aluno ${studentId}`);
+            } catch (recordsError) {
+                console.warn('Erro ao buscar ou excluir registros do aluno:', recordsError);
+                // Continuar com a exclusão do aluno mesmo se houver erro com os registros
             }
             
-            // Atualiza o cache local também
-            const students = await this.getStudents();
-            const filtered = students.filter(s => s.id !== studentId);
-            await this.saveStudents(filtered);
+            // Agora excluir o aluno
+            console.log(`Excluindo aluno: ${studentId}`);
+            await deleteData('students', studentId);
+            console.log(`Aluno excluído com sucesso: ${studentId}`);
             
             return true;
-        } catch (firebaseError) {
-            console.warn('Erro ao excluir aluno do Firebase, usando localStorage:', firebaseError);
-            // Fallback para localStorage
-            const students = await this.getStudents();
-            const filtered = students.filter(s => s.id !== studentId);
-            await this.saveStudents(filtered);
-            
-            // Também exclui todos os registros deste aluno
-            const records = await this.getRecords();
-            const filteredRecords = records.filter(r => r.studentId !== studentId);
-            await this.saveRecords(filteredRecords);
-            return true;
+        } catch (error) {
+            console.error(`Erro crítico ao excluir aluno ${studentId}:`, error);
+            throw error;
         }
     }
 
     // Daily Records
     static async getRecords() {
         try {
-            try {
-                // Verifica se o Firebase está conectado - espera a inicialização
-                if (typeof isFirestoreConnected === 'function') {
-                    const connected = await isFirestoreConnected();
-                    if (!connected) {
-                        throw new Error("Firebase não está conectado");
-                    }
-                } else {
-                    throw new Error("Função isFirestoreConnected não encontrada");
-                }
-                
-                // Tenta buscar do Firebase primeiro
-                const records = await fetchData('daily_records', {
-                    orderBy: ['date', 'desc']
-                }, 1000);
-                console.log("Registros carregados do Firebase:", records.length);
-                
-                // Salva no localStorage como backup
-                if (records.length > 0) {
-                    localStorage.setItem('daily_records', JSON.stringify(records));
-                    localStorage.setItem('records_last_sync', new Date().toISOString());
-                }
-                
-                return records;
-            } catch (firebaseError) {
-                console.warn('Erro ao buscar registros do Firebase, usando localStorage:', firebaseError);
-                // Fallback para localStorage
-                const recordsJson = localStorage.getItem('daily_records');
-                const records = recordsJson ? JSON.parse(recordsJson) : [];
-                console.log(`Usando ${records.length} registros do cache local`);
-                return records;
+            // Garantir que o banco de dados esteja inicializado
+            if (typeof initializeDatabase === 'function') {
+                await initializeDatabase();
+            } else {
+                throw new Error("Função initializeDatabase não encontrada");
             }
+            
+            // Buscar dados
+            const records = await fetchData('daily_records', {
+                orderBy: ['date', 'desc']
+            }, 1000);
+            
+            console.log("Registros carregados do banco de dados local:", records.length);
+            return records;
         } catch (error) {
             console.error('Erro crítico ao obter registros:', error);
             return [];
@@ -215,37 +136,23 @@ class StorageService {
     }
 
     static async saveRecords(records) {
-        try {
-            localStorage.setItem('daily_records', JSON.stringify(records));
-            localStorage.setItem('records_last_sync', new Date().toISOString());
-        } catch (error) {
-            console.error('Erro ao salvar registros no localStorage:', error);
-        }
+        console.log("Função legada saveRecords chamada - sem efeito");
+        return true;
     }
 
     static async getRecordsByDate(date) {
         try {
-            try {
-                // Verifica se o Firebase está conectado - espera a inicialização
-                if (typeof isFirestoreConnected === 'function') {
-                    const connected = await isFirestoreConnected();
-                    if (!connected) {
-                        throw new Error("Firebase não está conectado");
-                    }
-                } else {
-                    throw new Error("Função isFirestoreConnected não encontrada");
-                }
-                
-                // Tenta buscar do Firebase primeiro
-                const records = await fetchData('daily_records', { where: ['date', '==', date] }, 1000);
-                console.log(`Registros para a data ${date}:`, records.length);
-                return records;
-            } catch (firebaseError) {
-                console.warn('Erro ao buscar registros por data do Firebase, usando localStorage:', firebaseError);
-                // Fallback para localStorage
-                const records = await this.getRecords();
-                return records.filter(r => r.date === date);
+            // Garantir que o banco de dados esteja inicializado
+            if (typeof initializeDatabase === 'function') {
+                await initializeDatabase();
+            } else {
+                throw new Error("Função initializeDatabase não encontrada");
             }
+            
+            // Buscar dados filtrados por data
+            const records = await fetchData('daily_records', { where: ['date', '==', date] }, 1000);
+            console.log(`Registros para a data ${date}:`, records.length);
+            return records;
         } catch (error) {
             console.error(`Erro crítico ao obter registros para data ${date}:`, error);
             return [];
@@ -260,89 +167,66 @@ class StorageService {
                 updatedAt: new Date().toISOString()
             };
             
-            // Tenta atualizar no Firebase
-            if (updatedRecord.id && !updatedRecord.id.includes('-')) {
-                // Se já tem ID do Firebase, atualiza o documento existente
+            // Se já tem ID, atualizar
+            if (updatedRecord.id) {
                 await updateData('daily_records', updatedRecord.id, recordToUpdate);
-                console.log(`Registro atualizado no Firebase: ${updatedRecord.id}`);
+                console.log(`Registro atualizado: ${updatedRecord.id}`);
                 return recordToUpdate;
-            } else if (updatedRecord.id && updatedRecord.id.includes('-')) {
-                // Se tem ID composto (local), cria um novo documento
-                const docId = await saveData('daily_records', recordToUpdate);
-                console.log(`Registro local convertido para Firebase com ID: ${docId}`);
-                return { ...recordToUpdate, id: docId };
             } else {
-                // Se não tem ID, cria um novo documento
+                // Caso contrário, criar novo
+                recordToUpdate.createdAt = new Date().toISOString();
                 const docId = await saveData('daily_records', recordToUpdate);
                 console.log(`Novo registro criado com ID: ${docId}`);
                 return { ...recordToUpdate, id: docId };
             }
-        } catch (firebaseError) {
-            console.warn('Erro ao atualizar registro no Firebase, usando localStorage:', firebaseError);
-            // Fallback para localStorage
-            const records = await this.getRecords();
-            const index = records.findIndex(r => r.id === updatedRecord.id);
-            const recordWithTimestamp = {
-                ...updatedRecord,
-                updatedAt: new Date().toISOString()
-            };
-            
-            if (index !== -1) {
-                records[index] = recordWithTimestamp;
-            } else {
-                // Se não encontrou pelo ID, pode ser um novo registro
-                // ou pode ser que o ID seja composto (local)
-                const composedIndex = records.findIndex(r => 
-                    r.studentId === updatedRecord.studentId && 
-                    r.date === updatedRecord.date
-                );
-                
-                if (composedIndex !== -1) {
-                    records[composedIndex] = recordWithTimestamp;
-                } else {
-                    records.push(recordWithTimestamp);
-                }
-            }
-            
-            await this.saveRecords(records);
-            return recordWithTimestamp;
+        } catch (error) {
+            console.error('Erro ao atualizar registro:', error);
+            throw error;
         }
     }
 
+    // Inicialização de registros diários
     static async initializeRecordsForDate(date) {
-        const students = await this.getStudents();
-        const existingRecords = await this.getRecordsByDate(date);
-        
-        console.log(`Inicializando registros para ${date}. Alunos: ${students.length}, Registros existentes: ${existingRecords.length}`);
-        
-        const initializationPromises = [];
-        
-        for (const student of students) {
-            const existingRecord = existingRecords.find(r => r.studentId === student.id);
-            if (!existingRecord) {
-                const newRecord = {
-                    studentId: student.id,
-                    date,
-                    hadLunch: false,
-                    hadDinner: false,
-                    extraHours: 0,
-                    updatedAt: new Date().toISOString()
-                };
+        try {
+            console.log(`Inicializando registros para a data ${date}`);
+            
+            // Buscar todos os alunos
+            const allStudents = await this.getStudents();
+            
+            // Verificar registros existentes para esta data
+            const existingRecords = await this.getRecordsByDate(date);
+            
+            // Para cada aluno, verificar se já tem registro para esta data
+            let createdCount = 0;
+            for (const student of allStudents) {
+                const hasRecord = existingRecords.some(record => record.studentId === student.id);
                 
-                // Para compatibilidade com o localStorage, definimos um ID customizado
-                // Isso será substituído pelo ID do Firestore após salvar
-                newRecord.id = `${student.id}-${date}`;
-                
-                // Armazena as promessas para execução em paralelo
-                initializationPromises.push(this.updateRecord(newRecord));
+                if (!hasRecord) {
+                    // Criar novo registro
+                    const newRecord = {
+                        studentId: student.id,
+                        studentName: student.name,
+                        studentClass: student.class,
+                        date,
+                        hadLunch: false,
+                        hadDinner: false,
+                        extraHours: 0,
+                        isPresent: false,
+                        notes: ''
+                    };
+                    
+                    await this.updateRecord(newRecord);
+                    createdCount++;
+                }
             }
+            
+            console.log(`${createdCount} novos registros criados para a data ${date}`);
+            
+            // Buscar os registros atualizados
+            return await this.getRecordsByDate(date);
+        } catch (error) {
+            console.error(`Erro ao inicializar registros para data ${date}:`, error);
+            throw error;
         }
-        
-        // Aguarda todas as operações terminarem
-        if (initializationPromises.length > 0) {
-            await Promise.all(initializationPromises);
-        }
-        
-        console.log(`Inicialização de registros para ${date} concluída.`);
     }
 }

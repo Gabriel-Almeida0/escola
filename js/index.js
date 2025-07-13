@@ -2,7 +2,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const recordsList = document.getElementById('recordsList');
     const currentDateElement = document.getElementById('currentDate');
     const refreshButton = document.getElementById('refreshButton');
+    const todayButton = document.getElementById('todayButton');
+    const dateSelector = document.getElementById('dateSelector');
     const emptyContainer = document.querySelector('.empty-container');
+    const notificationContainer = document.getElementById('notificationContainer');
+    
+    // Verificar se o sistema de notificações está disponível
+    if (!window.showSuccess || !window.showError) {
+        console.warn("Sistema de notificações não encontrado. Usando alertas padrão.");
+        window.showSuccess = function(message) { alert(message); };
+        window.showError = function(message) { alert(message); };
+    }
     
     let students = [];
     let records = [];
@@ -11,14 +21,130 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedFilter = 'all';
     let classes = [];
     
+    // CORREÇÃO: Forçar recálculo da data atual a cada inicialização
+    console.log("Inicializando página - Obtendo data atual");
     const todayString = getTodayString();
-    currentDateElement.textContent = formatDisplayDate(todayString);
+    console.log("Data atual (hoje) recalculada:", todayString);
+    
+    // Definir a data selecionada inicialmente como a data atual
+    let currentSelectedDate = todayString;
+    
+    // Verificar se existe uma data salva no localStorage (vindo da página de calendário)
+    const savedDate = localStorage.getItem('selectedDate');
+    if (savedDate) {
+        console.log("Data encontrada no localStorage:", savedDate);
+        currentSelectedDate = savedDate;
+        localStorage.removeItem('selectedDate'); // Limpar após usar
+    }
+    
+    console.log("Data selecionada para exibição:", currentSelectedDate);
+    
+    // CORREÇÃO: Forçar atualização da exibição da data
+    updateDateDisplay(currentSelectedDate);
+    
+    // Inicializar o seletor de data com a data selecionada
+    dateSelector.value = currentSelectedDate;
+    
+    // Verificação adicional para garantir que a data está correta
+    verifyDateDisplay();
     
     // Load initial data
-    loadData();
+    loadData(currentSelectedDate);
     
     // Event listeners
-    refreshButton.addEventListener('click', loadData);
+    refreshButton.addEventListener('click', () => {
+        console.log("Botão Atualizar clicado - Recarregando dados para:", currentSelectedDate);
+        loadData(currentSelectedDate);
+    });
+    
+    // Today button event listener
+    todayButton.addEventListener('click', () => {
+        console.group("Botão Hoje Clicado");
+        
+        // Recalcular a data atual para garantir precisão
+        const freshTodayString = getTodayString();
+        console.log("Nova data atual:", freshTodayString);
+        
+        // Atualizar a data selecionada e a interface
+        currentSelectedDate = freshTodayString;
+        dateSelector.value = freshTodayString;
+        console.log("Valor do seletor de data atualizado:", dateSelector.value);
+        
+        // Forçar a atualização do texto da data
+        updateDateDisplay(currentSelectedDate);
+        
+        // Limpar qualquer data salva no localStorage para evitar problemas
+        localStorage.removeItem('selectedDate');
+        
+        // Recarregar os dados para a data atual
+        loadData(currentSelectedDate);
+        
+        // Verificação adicional
+        verifyDateDisplay();
+        
+        console.groupEnd();
+    });
+    
+    // Date selector event listener
+    dateSelector.addEventListener('change', function() {
+        console.group("Seleção de Nova Data");
+        console.log("Valor do seletor de data:", this.value);
+        
+        currentSelectedDate = this.value;
+        console.log("Nova data selecionada:", currentSelectedDate);
+        
+        // Forçar a atualização do texto da data
+        updateDateDisplay(currentSelectedDate);
+        
+        loadData(currentSelectedDate);
+        
+        // Verificação adicional
+        verifyDateDisplay();
+        console.groupEnd();
+    });
+    
+    // Função para atualizar a exibição da data na interface
+    function updateDateDisplay(dateString) {
+        console.group("Atualização da Data na Interface");
+        console.log("Data a ser formatada:", dateString);
+        
+        // Formatar a data para exibição
+        const formattedDate = formatDisplayDate(dateString);
+        console.log("Data formatada para exibição:", formattedDate);
+        
+        // Atualizar o elemento HTML
+        currentDateElement.textContent = formattedDate;
+        console.log("Elemento HTML atualizado:", currentDateElement.textContent);
+        console.groupEnd();
+    }
+    
+    // Função para verificar se a data exibida está correta
+    function verifyDateDisplay() {
+        console.group("Verificação de Data na Interface");
+        
+        // Verificar a data atual
+        const actualToday = new Date();
+        const actualYear = actualToday.getFullYear();
+        const actualMonth = actualToday.getMonth() + 1;
+        const actualDay = actualToday.getDate();
+        
+        console.log("Data real do sistema:", {
+            ano: actualYear,
+            mes: actualMonth,
+            dia: actualDay,
+            dataCompleta: actualToday
+        });
+        
+        // Verificar a data exibida
+        console.log("Data selecionada no sistema:", currentSelectedDate);
+        console.log("Texto exibido na interface:", currentDateElement.textContent);
+        
+        // Verificar se a data do botão "Hoje" está correta
+        const todayButtonDate = getTodayString();
+        console.log("Data do botão 'Hoje':", todayButtonDate);
+        
+        console.groupEnd();
+    }
     
     // Filter buttons event listener
     document.querySelectorAll('.filter-button').forEach(button => {
@@ -32,18 +158,17 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Load data function
-    async function loadData() {
+    async function loadData(dateString) {
         try {
             // Show loading state
             recordsList.innerHTML = '<div class="loading-container"><p>Carregando...</p></div>';
             
             // Get students and records
             students = await StorageService.getStudents();
-            records = await StorageService.getRecordsByDate(todayString);
             
-            // Initialize records for today if they don't exist
-            await StorageService.initializeRecordsForDate(todayString);
-            records = await StorageService.getRecordsByDate(todayString);
+            // Initialize records for the selected date if they don't exist
+            await StorageService.initializeRecordsForDate(dateString);
+            records = await StorageService.getRecordsByDate(dateString);
             
             // Extract unique classes
             classes = [...new Set(students.map(s => s.class))];
@@ -56,7 +181,7 @@ document.addEventListener('DOMContentLoaded', function() {
             renderRecords();
         } catch (error) {
             console.error('Error loading data:', error);
-            alert('Não foi possível carregar os dados');
+            showError('Não foi possível carregar os dados', 'Erro');
             recordsList.innerHTML = '<div class="error-container"><p>Erro ao carregar dados</p></div>';
         }
     }
@@ -96,16 +221,21 @@ document.addEventListener('DOMContentLoaded', function() {
             filtered = filtered.filter(s => s.class === selectedClass);
         }
         
-        // Filter by meal status
+        // Filter by meal status or presence status
         if (selectedFilter !== 'all') {
             filtered = filtered.filter(student => {
                 const record = records.find(r => r.studentId === student.id);
-                if (!record) return selectedFilter === 'none';
+                if (!record) return selectedFilter === 'none' || selectedFilter === 'absent';
                 
                 const hadLunch = record.hadLunch;
                 const hadDinner = record.hadDinner;
+                const isPresent = record.isPresent;
                 
                 switch (selectedFilter) {
+                    case 'present':
+                        return isPresent;
+                    case 'absent':
+                        return !isPresent;
                     case 'lunch':
                         return hadLunch && !hadDinner;
                     case 'dinner':
@@ -153,6 +283,12 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                         </div>
                         <div class="controls-container">
+                            <div class="presence-container">
+                                <button class="presence-button ${record.isPresent ? 'active' : ''}" data-action="presence" data-record-id="${record.id}">
+                                    <i class="fas fa-check-circle"></i>
+                                    Presente
+                                </button>
+                            </div>
                             <div class="meal-controls">
                                 <button class="meal-button ${record.hadLunch ? 'active' : ''}" data-action="lunch" data-record-id="${record.id}">
                                     <i class="fas fa-utensils"></i>
@@ -183,6 +319,35 @@ document.addEventListener('DOMContentLoaded', function() {
             
             recordsList.innerHTML = recordsHTML;
             
+            // Add event listeners to presence button
+            document.querySelectorAll('.presence-button').forEach(button => {
+                button.addEventListener('click', async function() {
+                    const recordId = this.getAttribute('data-record-id');
+                    const record = records.find(r => r.id === recordId);
+                    
+                    if (record) {
+                        record.isPresent = !record.isPresent;
+                        record.updatedAt = new Date().toISOString();
+                        
+                        try {
+                            await StorageService.updateRecord(record);
+                            // Update UI
+                            this.classList.toggle('active');
+                            
+                            // Mostrar notificação
+                            if (record.isPresent) {
+                                showSuccess(`${record.studentName} marcado como presente`, 'Presença');
+                            } else {
+                                showInfo(`${record.studentName} marcado como ausente`, 'Presença');
+                            }
+                        } catch (error) {
+                            console.error('Error updating presence record:', error);
+                            showError('Não foi possível atualizar a presença', 'Erro');
+                        }
+                    }
+                });
+            });
+            
             // Add event listeners to meal buttons
             document.querySelectorAll('.meal-button').forEach(button => {
                 button.addEventListener('click', async function() {
@@ -197,6 +362,16 @@ document.addEventListener('DOMContentLoaded', function() {
                             record.hadDinner = !record.hadDinner;
                         }
                         
+                        // Marcar como presente automaticamente se tiver almoço ou jantar
+                        if ((record.hadLunch || record.hadDinner) && !record.isPresent) {
+                            record.isPresent = true;
+                            // Atualizar também o botão de presença na interface
+                            const presenceButton = document.querySelector(`.presence-button[data-record-id="${recordId}"]`);
+                            if (presenceButton) {
+                                presenceButton.classList.add('active');
+                            }
+                        }
+                        
                         record.updatedAt = new Date().toISOString();
                         
                         try {
@@ -205,7 +380,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             this.classList.toggle('active');
                         } catch (error) {
                             console.error('Error updating record:', error);
-                            alert('Não foi possível atualizar o registro');
+                            showError('Não foi possível atualizar o registro', 'Erro');
                         }
                     }
                 });
@@ -224,6 +399,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         if (newHours !== record.extraHours) {
                             record.extraHours = newHours;
+                            
+                            // Marcar como presente automaticamente se tiver horas extras
+                            if (newHours > 0 && !record.isPresent) {
+                                record.isPresent = true;
+                                // Atualizar também o botão de presença na interface
+                                const presenceButton = document.querySelector(`.presence-button[data-record-id="${recordId}"]`);
+                                if (presenceButton) {
+                                    presenceButton.classList.add('active');
+                                }
+                            }
+                            
                             record.updatedAt = new Date().toISOString();
                             
                             try {
@@ -233,7 +419,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 hoursValueElement.textContent = newHours;
                             } catch (error) {
                                 console.error('Error updating record:', error);
-                                alert('Não foi possível atualizar o registro');
+                                showError('Não foi possível atualizar o registro', 'Erro');
                             }
                         }
                     }
