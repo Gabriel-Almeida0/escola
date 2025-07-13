@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#FFFFFF">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.gstatic.com https://*.googletagmanager.com; script-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.googletagmanager.com 'unsafe-inline'; style-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline'; font-src 'self' https://cdnjs.cloudflare.com data:; img-src 'self' https://*.googleapis.com https://*.gstatic.com data: blob:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline'; font-src 'self' https://cdnjs.cloudflare.com data:; img-src 'self' data: blob:;">
     <title>Relatórios - Sistema de Registros Escolares</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -23,6 +23,7 @@
                 <li><a href="students.html"><i class="fas fa-user-graduate"></i> Alunos</a></li>
                 <li><a href="calendar.html"><i class="fas fa-calendar"></i> Calendário</a></li>
                 <li class="active"><a href="reports.html"><i class="fas fa-chart-bar"></i> Relatórios</a></li>
+                <li><a href="backup.html"><i class="fas fa-database"></i> Backup</a></li>
             </ul>
         </nav>
 
@@ -60,14 +61,18 @@
                     <i class="fas fa-sync-alt"></i>
                     Gerar Relatório
                 </button>
-                <button id="exportReportBtn" class="export-button">
-                    <i class="fas fa-download"></i>
-                    Exportar CSV
+                <button id="exportSheetBtn" class="export-sheet-button">
+                    <i class="fas fa-file-excel"></i>
+                    Exportar para Planilha
                 </button>
             </div>
 
             <div class="monthly-summary">
                 <div class="summary-stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalPresenceCount">0</div>
+                        <div class="stat-label">Total de Presenças</div>
+                    </div>
                     <div class="stat-item">
                         <div class="stat-value" id="totalLunchCount">0</div>
                         <div class="stat-label">Total de Almoços</div>
@@ -75,6 +80,10 @@
                     <div class="stat-item">
                         <div class="stat-value" id="totalDinnerCount">0</div>
                         <div class="stat-label">Total de Jantares</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalMealsCount">0</div>
+                        <div class="stat-label">Total de Refeições</div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-value" id="totalExtraHoursCount">0</div>
@@ -89,8 +98,10 @@
                         <tr>
                             <th>Aluno</th>
                             <th>Turma</th>
+                            <th>Total de Presenças</th>
                             <th>Total de Almoços</th>
                             <th>Total de Jantares</th>
+                            <th>Total de Refeições</th>
                             <th>Total de Horas Extras</th>
                         </tr>
                     </thead>
@@ -120,47 +131,41 @@
                     <i class="fas fa-chart-bar"></i>
                     <span>Relatórios</span>
                 </a>
+                <a href="backup.html" class="mobile-tab">
+                    <i class="fas fa-database"></i>
+                    <span>Backup</span>
+                </a>
             </div>
         </nav>
     </div>
 
     <!-- Status de conexão -->
     <div id="connectionStatus" class="connection-status hidden">
-        <span id="connectionMessage">Sem conexão com o Firebase</span>
+        <span id="connectionMessage">Sem conexão com o banco de dados</span>
         <button id="retryConnection" class="retry-button">
             <i class="fas fa-sync-alt"></i>
         </button>
     </div>
-
-    <!-- Firebase Scripts -->
-    <script type="module">
-        // Import the functions you need from the SDKs
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
-        import { getAuth } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
-        import { getStorage } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-storage.js";
-        
-        // Disponibilizar as importações globalmente
-        window.firebaseModules = {
-            initializeApp,
-            getFirestore,
-            getAuth,
-            getStorage
-        };
-    </script>
-    <script src="js/firebase-config.js"></script>
+    
+    <!-- Container de notificações -->
+    <div id="notificationContainer" class="notification-container"></div>
+    
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/localdb.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/dateUtils.js"></script>
+    <script src="js/notifications.js"></script>
     <script src="js/reports.js"></script>
     
     <script>
         // Manipulador de eventos de conexão
-        document.addEventListener('firestore-connected', function() {
+        document.addEventListener('db-connected', function() {
             const connectionStatus = document.getElementById('connectionStatus');
             connectionStatus.classList.add('hidden');
         });
         
-        document.addEventListener('firestore-disconnected', function(event) {
+        document.addEventListener('db-disconnected', function(event) {
             const connectionStatus = document.getElementById('connectionStatus');
             const connectionMessage = document.getElementById('connectionMessage');
             connectionStatus.classList.remove('hidden');
@@ -168,14 +173,14 @@
             if (event.detail && event.detail.message) {
                 connectionMessage.textContent = `Erro: ${event.detail.message}`;
             } else {
-                connectionMessage.textContent = 'Sem conexão com o Firebase';
+                connectionMessage.textContent = 'Sem conexão com o banco de dados';
             }
         });
         
         // Botão para tentar reconectar
         document.getElementById('retryConnection').addEventListener('click', function() {
-            if (typeof checkFirestoreConnection === 'function') {
-                checkFirestoreConnection();
+            if (typeof checkConnection === 'function') {
+                checkConnection();
             }
         });
     </script>

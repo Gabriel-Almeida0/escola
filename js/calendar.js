@@ -7,11 +7,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const lunchCountElement = document.getElementById('lunchCount');
     const dinnerCountElement = document.getElementById('dinnerCount');
     const extraHoursCountElement = document.getElementById('extraHoursCount');
+    const editDayButton = document.getElementById('editDayButton');
     
     // Current state
     let currentDate = new Date();
     let selectedDate = new Date();
     let allRecords = [];
+    let selectedDateString = '';
     
     // Initialize
     loadAllRecords();
@@ -27,11 +29,27 @@ document.addEventListener('DOMContentLoaded', function() {
         renderCalendar();
     });
     
+    // Edit day button event listener
+    editDayButton.addEventListener('click', () => {
+        if (selectedDateString) {
+            // Store the selected date in localStorage
+            localStorage.setItem('selectedDate', selectedDateString);
+            // Redirect to the main page
+            window.location.href = 'index.html';
+        } else {
+            alert('Por favor, selecione uma data no calendário primeiro.');
+        }
+    });
+    
     async function loadAllRecords() {
         try {
             allRecords = await StorageService.getRecords();
             renderCalendar();
-            updateDailySummary(formatDate(selectedDate));
+            
+            // Check if there is a selected date from previous page
+            const today = formatDate(new Date());
+            selectedDateString = today;
+            updateDailySummary(today);
         } catch (error) {
             console.error('Error loading records:', error);
             alert('Não foi possível carregar os registros');
@@ -107,6 +125,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // Update selected date and summary
                         selectedDate = dayDate;
+                        selectedDateString = dateString;
                         updateDailySummary(dateString);
                     });
                     
@@ -122,7 +141,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Stop if we've reached the end of the month
             if (date > daysInMonth) break;
         }
-    }    function updateDailySummary(dateString) {
+    }
+    
+    function updateDailySummary(dateString) {
         // Update the date display
         selectedDateElement.textContent = formatDisplayDate(dateString);
         

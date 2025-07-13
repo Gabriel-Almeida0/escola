@@ -2,10 +2,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const monthSelect = document.getElementById('monthSelect');
     const yearInput = document.getElementById('yearInput');
     const generateReportBtn = document.getElementById('generateReportBtn');
-    const exportReportBtn = document.getElementById('exportReportBtn');
+    const exportSheetBtn = document.getElementById('exportSheetBtn');
     const reportTableBody = document.getElementById('reportTableBody');
+    const totalPresenceCountElement = document.getElementById('totalPresenceCount');
     const totalLunchCountElement = document.getElementById('totalLunchCount');
     const totalDinnerCountElement = document.getElementById('totalDinnerCount');
+    const totalMealsCountElement = document.getElementById('totalMealsCount');
     const totalExtraHoursCountElement = document.getElementById('totalExtraHoursCount');
     
     // Set default month to current month
@@ -13,52 +15,16 @@ document.addEventListener('DOMContentLoaded', function() {
     monthSelect.value = (currentDate.getMonth() + 1).toString();
     yearInput.value = currentDate.getFullYear().toString();
     
-    // Load saved paper preference
-    loadPaperPreference();
-    
     // Initialize
     loadReport();
     
     // Event listeners
     generateReportBtn.addEventListener('click', loadReport);
-    exportReportBtn.addEventListener('click', exportReport);
-    
-    // Add event listeners to paper options
-    document.querySelectorAll('input[name="paperType"]').forEach(radio => {
-        radio.addEventListener('change', function() {
-            savePaperPreference(this.value);
-        });
-    });
-    
-    // Save paper preference to localStorage
-    function savePaperPreference(value) {
-        try {
-            localStorage.setItem('preferred_paper_type', value);
-            console.log('Paper preference saved:', value);
-        } catch (error) {
-            console.error('Error saving paper preference:', error);
-        }
-    }
-    
-    // Load paper preference from localStorage
-    function loadPaperPreference() {
-        try {
-            const savedPreference = localStorage.getItem('preferred_paper_type');
-            if (savedPreference) {
-                const radioOption = document.querySelector(`input[name="paperType"][value="${savedPreference}"]`);
-                if (radioOption) {
-                    radioOption.checked = true;
-                    console.log('Paper preference loaded:', savedPreference);
-                }
-            }
-        } catch (error) {
-            console.error('Error loading paper preference:', error);
-        }
-    }
+    exportSheetBtn.addEventListener('click', exportReport);
     
     async function loadReport() {
         try {
-            reportTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Carregando...</td></tr>';
+            reportTableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Carregando...</td></tr>';
             
             const month = parseInt(monthSelect.value);
             const year = parseInt(yearInput.value);
@@ -79,20 +45,24 @@ document.addEventListener('DOMContentLoaded', function() {
             const reportData = generateMonthlyReport(students, monthRecords);
             
             // Update summary
+            const totalPresences = reportData.reduce((sum, item) => sum + item.totalPresences, 0);
             const totalLunches = reportData.reduce((sum, item) => sum + item.totalLunches, 0);
             const totalDinners = reportData.reduce((sum, item) => sum + item.totalDinners, 0);
+            const totalMeals = totalLunches + totalDinners; // Total de refeições = almoços + jantares
             const totalExtraHours = reportData.reduce((sum, item) => sum + item.totalExtraHours, 0);
             
+            totalPresenceCountElement.textContent = totalPresences;
             totalLunchCountElement.textContent = totalLunches;
             totalDinnerCountElement.textContent = totalDinners;
+            totalMealsCountElement.textContent = totalMeals;
             totalExtraHoursCountElement.textContent = totalExtraHours;
             
             // Render table
             renderReportTable(reportData);
         } catch (error) {
             console.error('Error loading report:', error);
-            alert('Não foi possível carregar o relatório');
-            reportTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Erro ao carregar relatório</td></tr>';
+            showError('Não foi possível carregar o relatório');
+            reportTableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Erro ao carregar relatório</td></tr>';
         }
     }
     
@@ -106,8 +76,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 studentId: student.id,
                 studentName: student.name,
                 class: student.class,
+                totalPresences: 0,
                 totalLunches: 0,
                 totalDinners: 0,
+                totalMeals: 0, // Novo campo para total de refeições
                 totalExtraHours: 0
             });
         });
@@ -116,8 +88,14 @@ document.addEventListener('DOMContentLoaded', function() {
         monthRecords.forEach(record => {
             const studentData = studentMap.get(record.studentId);
             if (studentData) {
+                if (record.isPresent) studentData.totalPresences++;
                 if (record.hadLunch) studentData.totalLunches++;
                 if (record.hadDinner) studentData.totalDinners++;
+                
+                // Calcular total de refeições para este registro
+                const mealsInThisRecord = (record.hadLunch ? 1 : 0) + (record.hadDinner ? 1 : 0);
+                studentData.totalMeals += mealsInThisRecord;
+                
                 studentData.totalExtraHours += record.extraHours || 0;
             }
         });
@@ -129,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function renderReportTable(reportData) {
         if (reportData.length === 0) {
-            reportTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Nenhum dado disponível para este mês</td></tr>';
+            reportTableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Nenhum dado disponível para este mês</td></tr>';
             return;
         }
         
@@ -139,8 +117,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 <tr>
                     <td>${item.studentName}</td>
                     <td>${item.class}</td>
+                    <td>${item.totalPresences}</td>
                     <td>${item.totalLunches}</td>
                     <td>${item.totalDinners}</td>
+                    <td>${item.totalMeals}</td>
                     <td>${item.totalExtraHours}</td>
                 </tr>
             `;
@@ -155,29 +135,49 @@ document.addEventListener('DOMContentLoaded', function() {
             const year = parseInt(yearInput.value);
             const monthName = getMonthName(month);
             
-            // Get selected paper type
-            const selectedPaperType = document.querySelector('input[name="paperType"]:checked');
-            const paperTypeValue = selectedPaperType ? selectedPaperType.value : 'couche-brilho';
-            const paperTypeLabel = selectedPaperType ? selectedPaperType.nextElementSibling.textContent.trim() : 'Couché Brilho 250g';
-            
             // Get table data
             const rows = reportTableBody.querySelectorAll('tr');
             if (rows.length === 0 || (rows.length === 1 && rows[0].querySelector('td[colspan]'))) {
-                alert('Não há dados para exportar');
+                showWarning('Não há dados para exportar');
                 return;
             }
             
-            // Create CSV content
-            let csvContent = 'Relatório de Atividades\n';
-            csvContent += `Período: ${monthName} ${year}\n`;
-            csvContent += `Papel da Capa: ${paperTypeLabel}\n\n`;
-            csvContent += 'Aluno,Turma,Total de Almoços,Total de Jantares,Total de Horas Extras\n';
+            // Adicionar BOM para garantir que o Excel/Google Planilhas reconheça o UTF-8
+            const BOM = '\uFEFF';
             
+            // Create CSV content optimized for Google Sheets
+            let csvContent = BOM; // Iniciar com BOM para UTF-8
+            
+            // Cabeçalho com informações do relatório
+            csvContent += 'Relatório de Atividades\n';
+            csvContent += `Período:,${monthName} ${year}\n\n`;
+            
+            // Cabeçalho das colunas com formatação especial para Google Sheets
+            csvContent += 'Aluno,Turma,Total de Presenças,Total de Almoços,Total de Jantares,Total de Refeições,Total de Horas Extras\n';
+            
+            // Dados das linhas
             rows.forEach(row => {
                 const cells = row.querySelectorAll('td');
-                const rowData = Array.from(cells).map(cell => `"${cell.textContent.trim()}"`);
+                // Garantir que textos com vírgulas sejam devidamente escapados com aspas
+                const rowData = Array.from(cells).map(cell => {
+                    const text = cell.textContent.trim();
+                    // Escapar aspas duplicando-as e envolver em aspas se contiver vírgulas ou aspas
+                    if (text.includes(',') || text.includes('"') || text.includes('\n')) {
+                        return `"${text.replace(/"/g, '""')}"`;
+                    }
+                    return text;
+                });
                 csvContent += rowData.join(',') + '\n';
             });
+            
+            // Adicionar linha em branco e resumo
+            csvContent += '\n';
+            csvContent += `Resumo,\n`;
+            csvContent += `Total de Presenças:,${totalPresenceCountElement.textContent}\n`;
+            csvContent += `Total de Almoços:,${totalLunchCountElement.textContent}\n`;
+            csvContent += `Total de Jantares:,${totalDinnerCountElement.textContent}\n`;
+            csvContent += `Total de Refeições:,${totalMealsCountElement.textContent}\n`;
+            csvContent += `Total de Horas Extras:,${totalExtraHoursCountElement.textContent}\n`;
             
             // Create blob and download link
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -192,11 +192,21 @@ document.addEventListener('DOMContentLoaded', function() {
             link.click();
             document.body.removeChild(link);
             
-            // Show confirmation with paper type
-            alert(`Relatório exportado com sucesso!\nTipo de papel para capa: ${paperTypeLabel}`);
+            // Show notification with instructions for Google Sheets
+            showNotification(
+                'Exportação concluída', 
+                `Relatório exportado com sucesso!<br><br>
+                <strong>Para abrir no Google Planilhas:</strong><br>
+                1. Acesse drive.google.com<br>
+                2. Clique em "Novo" > "Upload de arquivo"<br>
+                3. Selecione o arquivo CSV baixado<br>
+                4. Abra o arquivo com Google Planilhas`,
+                'success',
+                8000
+            );
         } catch (error) {
             console.error('Error exporting report:', error);
-            alert('Não foi possível exportar o relatório');
+            showError('Não foi possível exportar o relatório para planilha');
         }
     }
 });
