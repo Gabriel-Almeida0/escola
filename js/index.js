@@ -158,7 +158,32 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Filter buttons event listener
-    document.querySelectorAll('.filter-button').forEach(button => {
+    document.getElementById('allFilter').addEventListener('click', function() {
+        document.querySelectorAll('.filter-button').forEach(btn => btn.classList.remove('active'));
+        this.classList.add('active');
+        selectedFilter = 'all';
+        filterStudents();
+        renderRecords();
+    });
+    
+    document.getElementById('presentFilter').addEventListener('click', function() {
+        document.querySelectorAll('.filter-button').forEach(btn => btn.classList.remove('active'));
+        this.classList.add('active');
+        selectedFilter = 'present';
+        filterStudents();
+        renderRecords();
+    });
+    
+    document.getElementById('absentFilter').addEventListener('click', function() {
+        document.querySelectorAll('.filter-button').forEach(btn => btn.classList.remove('active'));
+        this.classList.add('active');
+        selectedFilter = 'absent';
+        filterStudents();
+        renderRecords();
+    });
+    
+    // Outros botões de filtro
+    document.querySelectorAll('.filter-button[data-filter]').forEach(button => {
         button.addEventListener('click', function() {
             document.querySelectorAll('.filter-button').forEach(btn => btn.classList.remove('active'));
             this.classList.add('active');
