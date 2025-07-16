@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#FFFFFF">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Backup e Restauração de Dados</title>
+    
+    <!-- Política de segurança de conteúdo -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline'; font-src 'self' https://cdnjs.cloudflare.com data:; img-src 'self' data: blob:;">
+    
+    <!-- Estilos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    
+    <style>
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .backup-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+        
+        .card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .btn-success {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .btn-warning {
+            background-color: #f39c12;
+            color: white;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+        }
+        
+        .btn:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        
+        .file-input {
+            margin: 15px 0;
+        }
+        
+        .file-input input {
+            display: none;
+        }
+        
+        .file-input label {
+            display: inline-block;
+            padding: 10px 15px;
+            background-color: #3498db;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        
+        .file-input label:hover {
+            background-color: #2980b9;
+        }
+        
+        .file-name {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        
+        .status-message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        
+        .status-success {
+            background-color: #d5f5e3;
+            color: #27ae60;
+            border: 1px solid #2ecc71;
+        }
+        
+        .status-error {
+            background-color: #fadbd8;
+            color: #c0392b;
+            border: 1px solid #e74c3c;
+        }
+        
+        .status-warning {
+            background-color: #fef9e7;
+            color: #f39c12;
+            border: 1px solid #f1c40f;
+        }
+        
+        .status-info {
+            background-color: #ebf5fb;
+            color: #2980b9;
+            border: 1px solid #3498db;
+        }
+        
+        .data-summary {
+            margin-top: 20px;
+        }
+        
+        .data-summary h3 {
+            margin-top: 0;
+            font-size: 16px;
+            color: #34495e;
+        }
+        
+        .data-summary ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        
+        .data-summary li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .data-summary li:last-child {
+            border-bottom: none;
+        }
+        
+        .data-summary .count {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        /* Modal de confirmação */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+            color: #2c3e50;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #7f8c8d;
+            padding: 0;
+            line-height: 1;
+        }
+        
+        .modal-body {
+            margin-bottom: 20px;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .backup-container {
+                padding: 0 10px;
+            }
+            
+            .card {
+                padding: 15px;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .file-input label {
+                width: 100%;
+                text-align: center;
+            }
+            
+            .modal {
+                width: 95%;
+                padding: 15px;
+            }
+        }
+        
+        /* Compatibilidade com o estilo existente */
+        .header {
+            margin-bottom: 20px;
+        }
+        
+        .header h1 {
+            margin-bottom: 5px;
+        }
+        
+        /* Status de conexão */
+        .connection-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #e74c3c;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 999;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .retry-button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .retry-button:hover {
+            transform: rotate(30deg);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Desktop Sidebar (hidden on mobile) -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>Escola App</h2>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="index.html"><i class="fas fa-home"></i> Registros Diários</a></li>
+                <li><a href="students.html"><i class="fas fa-user-graduate"></i> Alunos</a></li>
+                <li><a href="calendar.html"><i class="fas fa-calendar"></i> Calendário</a></li>
+                <li><a href="reports.html"><i class="fas fa-chart-bar"></i> Relatórios</a></li>
+                <li class="active"><a href="backup.html"><i class="fas fa-database"></i> Backup</a></li>
+            </ul>
+        </nav>
+
+        <main class="main-content">
+            <div class="header">
+                <h1>Backup e Restauração de Dados</h1>
+                <p class="subtitle">Gerencie seus dados locais com segurança</p>
+            </div>
+            
+            <div class="backup-container">
+                <div class="card">
+                    <h2><i class="fas fa-database"></i> Status do Banco de Dados</h2>
+                    <div id="db-status" class="status-message status-info">
+                        Verificando status do banco de dados...
+                    </div>
+                    
+                    <div class="data-summary" id="data-summary">
+                        <h3>Resumo dos Dados</h3>
+                        <ul>
+                            <li>
+                                <span>Alunos</span>
+                                <span class="count" id="students-count">Carregando...</span>
+                            </li>
+                            <li>
+                                <span>Registros Diários</span>
+                                <span class="count" id="records-count">Carregando...</span>
+                            </li>
+                            <li>
+                                <span>Calendário</span>
+                                <span class="count" id="calendar-count">Carregando...</span>
+                            </li>
+                            <li>
+                                <span>Relatórios</span>
+                                <span class="count" id="reports-count">Carregando...</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2><i class="fas fa-download"></i> Exportar Dados</h2>
+                    <p>Faça o download de todos os dados do sistema em formato JSON para backup.</p>
+                    
+                    <div class="btn-group">
+                        <button id="export-btn" class="btn btn-primary">
+                            <i class="fas fa-file-export"></i> Exportar Todos os Dados
+                        </button>
+                    </div>
+                    
+                    <div id="export-status" class="status-message hidden"></div>
+                </div>
+                
+                <div class="card">
+                    <h2><i class="fas fa-upload"></i> Importar Dados</h2>
+                    <p>Restaure os dados a partir de um arquivo JSON de backup.</p>
+                    
+                    <div class="file-input">
+                        <label for="import-file">
+                            <i class="fas fa-file-import"></i> Selecionar Arquivo de Backup
+                        </label>
+                        <input type="file" id="import-file" accept=".json">
+                        <div class="file-name" id="file-name">Nenhum arquivo selecionado</div>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button id="import-btn" class="btn btn-success" disabled>
+                            <i class="fas fa-file-import"></i> Importar Dados
+                        </button>
+                    </div>
+                    
+                    <div id="import-status" class="status-message hidden"></div>
+                </div>
+                
+                <div class="card">
+                    <h2><i class="fas fa-trash-alt"></i> Limpar Dados</h2>
+                    <p>Cuidado! Esta ação irá excluir todos os dados do sistema.</p>
+                    
+                    <div class="btn-group">
+                        <button id="clear-btn" class="btn btn-danger">
+                            <i class="fas fa-trash-alt"></i> Limpar Todos os Dados
+                        </button>
+                    </div>
+                    
+                    <div id="clear-status" class="status-message hidden"></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Mobile Bottom Tabs (visible only on mobile) -->
+        <nav class="mobile-tabs">
+            <div class="mobile-tabs-menu">
+                <a href="index.html" class="mobile-tab">
+                    <i class="fas fa-home"></i>
+                    <span>Registros</span>
+                </a>
+                <a href="students.html" class="mobile-tab">
+                    <i class="fas fa-user-graduate"></i>
+                    <span>Alunos</span>
+                </a>
+                <a href="calendar.html" class="mobile-tab">
+                    <i class="fas fa-calendar"></i>
+                    <span>Calendário</span>
+                </a>
+                <a href="reports.html" class="mobile-tab">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Relatórios</span>
+                </a>
+                <a href="backup.html" class="mobile-tab active">
+                    <i class="fas fa-database"></i>
+                    <span>Backup</span>
+                </a>
+            </div>
+        </nav>
+    </div>
+    
+    <!-- Modal de confirmação -->
+    <div id="confirm-modal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">Confirmação</h3>
+                <button id="modal-close" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="modal-message">Tem certeza que deseja continuar?</p>
+            </div>
+            <div class="modal-footer">
+                <button id="modal-cancel" class="btn">Cancelar</button>
+                <button id="modal-confirm" class="btn btn-danger">Confirmar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Status de conexão -->
+    <div id="connectionStatus" class="connection-status hidden">
+        <span id="connectionMessage">Sem conexão com o banco de dados</span>
+        <button id="retryConnection" class="retry-button">
+            <i class="fas fa-sync-alt"></i>
+        </button>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/localdb.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Elementos da UI
+            const dbStatus = document.getElementById('db-status');
+            const dataSummary = document.getElementById('data-summary');
+            const studentsCount = document.getElementById('students-count');
+            const recordsCount = document.getElementById('records-count');
+            const calendarCount = document.getElementById('calendar-count');
+            const reportsCount = document.getElementById('reports-count');
+            
+            const exportBtn = document.getElementById('export-btn');
+            const exportStatus = document.getElementById('export-status');
+            
+            const importFileInput = document.getElementById('import-file');
+            const fileName = document.getElementById('file-name');
+            const importBtn = document.getElementById('import-btn');
+            const importStatus = document.getElementById('import-status');
+            
+            const clearBtn = document.getElementById('clear-btn');
+            const clearStatus = document.getElementById('clear-status');
+            
+            const confirmModal = document.getElementById('confirm-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalMessage = document.getElementById('modal-message');
+            const modalClose = document.getElementById('modal-close');
+            const modalCancel = document.getElementById('modal-cancel');
+            const modalConfirm = document.getElementById('modal-confirm');
+            
+            // Função para mostrar mensagem de status
+            function showStatus(element, message, type) {
+                element.textContent = message;
+                element.className = `status-message status-${type}`;
+                element.classList.remove('hidden');
+                
+                // Rolar para a mensagem
+                setTimeout(() => {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
+            }
+            
+            // Função para esconder mensagem de status
+            function hideStatus(element) {
+                element.classList.add('hidden');
+            }
+            
+            // Função para mostrar modal de confirmação
+            function showConfirmModal(title, message, confirmCallback) {
+                modalTitle.textContent = title;
+                modalMessage.textContent = message;
+                confirmModal.classList.remove('hidden');
+                
+                // Configurar callback de confirmação
+                modalConfirm.onclick = () => {
+                    confirmCallback();
+                    confirmModal.classList.add('hidden');
+                };
+            }
+            
+            // Fechar modal
+            modalClose.onclick = () => {
+                confirmModal.classList.add('hidden');
+            };
+            
+            modalCancel.onclick = () => {
+                confirmModal.classList.add('hidden');
+            };
+            
+            // Inicializar banco de dados e carregar contagens
+            async function initializeApp() {
+                try {
+                    // Inicializar banco de dados
+                    await initializeDatabase();
+                    dbStatus.textContent = 'Banco de dados local conectado com sucesso.';
+                    dbStatus.className = 'status-message status-success';
+                    
+                    // Carregar contagens
+                    await loadDataCounts();
+                } catch (error) {
+                    console.error('Erro ao inicializar aplicativo:', error);
+                    dbStatus.textContent = `Erro ao conectar ao banco de dados: ${error.message}`;
+                    dbStatus.className = 'status-message status-error';
+                }
+            }
+            
+            // Carregar contagens de dados
+            async function loadDataCounts() {
+                try {
+                    // Verificar quais coleções existem no banco de dados
+                    const collections = {
+                        'students': true,
+                        'daily_records': true,
+                        'calendar': true,
+                        'reports': true
+                    };
+                    
+                    // Verificar se o banco de dados está inicializado
+                    if (!window.indexedDB || !initializationComplete) {
+                        await initializeDatabase();
+                    }
+                    
+                    // Carregar contagens apenas para as coleções que existem
+                    try {
+                        const students = await fetchData('students');
+                        studentsCount.textContent = students.length;
+                    } catch (e) {
+                        console.warn('Coleção students não encontrada:', e);
+                        studentsCount.textContent = '0';
+                    }
+                    
+                    try {
+                        const records = await fetchData('daily_records');
+                        recordsCount.textContent = records.length;
+                    } catch (e) {
+                        console.warn('Coleção daily_records não encontrada:', e);
+                        recordsCount.textContent = '0';
+                    }
+                    
+                    try {
+                        const calendar = await fetchData('calendar');
+                        calendarCount.textContent = calendar.length;
+                    } catch (e) {
+                        console.warn('Coleção calendar não encontrada:', e);
+                        calendarCount.textContent = '0';
+                    }
+                    
+                    try {
+                        const reports = await fetchData('reports');
+                        reportsCount.textContent = reports.length;
+                    } catch (e) {
+                        console.warn('Coleção reports não encontrada:', e);
+                        reportsCount.textContent = '0';
+                    }
+                } catch (error) {
+                    console.error('Erro ao carregar contagens:', error);
+                    showStatus(dbStatus, `Erro ao carregar contagens: ${error.message}`, 'warning');
+                }
+            }
+            
+            // Exportar dados
+            exportBtn.addEventListener('click', async () => {
+                try {
+                    showStatus(exportStatus, 'Exportando dados...', 'info');
+                    
+                    const result = await exportDatabaseToJSON();
+                    
+                    if (result.success) {
+                        showStatus(exportStatus, 'Dados exportados com sucesso! O download deve começar automaticamente.', 'success');
+                    } else {
+                        showStatus(exportStatus, `Erro ao exportar dados: ${result.message}`, 'error');
+                    }
+                } catch (error) {
+                    console.error('Erro ao exportar dados:', error);
+                    showStatus(exportStatus, `Erro ao exportar dados: ${error.message}`, 'error');
+                }
+            });
+            
+            // Atualizar nome do arquivo ao selecionar
+            importFileInput.addEventListener('change', () => {
+                if (importFileInput.files.length > 0) {
+                    fileName.textContent = importFileInput.files[0].name;
+                    importBtn.disabled = false;
+                } else {
+                    fileName.textContent = 'Nenhum arquivo selecionado';
+                    importBtn.disabled = true;
+                }
+            });
+            
+            // Importar dados
+            importBtn.addEventListener('click', () => {
+                if (!importFileInput.files.length) {
+                    showStatus(importStatus, 'Por favor, selecione um arquivo para importar.', 'warning');
+                    return;
+                }
+                
+                const file = importFileInput.files[0];
+                
+                showConfirmModal(
+                    'Confirmar Importação',
+                    'Esta ação irá mesclar os dados do arquivo com os dados existentes. Deseja continuar?',
+                    async () => {
+                        try {
+                            showStatus(importStatus, 'Importando dados...', 'info');
+                            
+                            const result = await importDatabaseFromJSON(file);
+                            
+                            if (result.success) {
+                                showStatus(importStatus, `Importação concluída: ${result.message}`, 'success');
+                                // Atualizar contagens
+                                await loadDataCounts();
+                            } else {
+                                showStatus(importStatus, `Erro na importação: ${result.message}`, 'error');
+                            }
+                        } catch (error) {
+                            console.error('Erro ao importar dados:', error);
+                            showStatus(importStatus, `Erro ao importar dados: ${error.message}`, 'error');
+                        }
+                    }
+                );
+            });
+            
+            // Limpar dados
+            clearBtn.addEventListener('click', () => {
+                showConfirmModal(
+                    'Confirmar Exclusão',
+                    'ATENÇÃO! Esta ação irá excluir TODOS os dados do sistema. Esta ação não pode ser desfeita. Deseja continuar?',
+                    async () => {
+                        try {
+                            showStatus(clearStatus, 'Limpando banco de dados...', 'info');
+                            
+                            const result = await clearDatabase();
+                            
+                            if (result.success) {
+                                showStatus(clearStatus, `Banco de dados limpo com sucesso: ${result.message}`, 'success');
+                                // Atualizar contagens
+                                await loadDataCounts();
+                            } else {
+                                showStatus(clearStatus, `Erro ao limpar banco de dados: ${result.message}`, 'error');
+                            }
+                        } catch (error) {
+                            console.error('Erro ao limpar banco de dados:', error);
+                            showStatus(clearStatus, `Erro ao limpar banco de dados: ${error.message}`, 'error');
+                        }
+                    }
+                );
+            });
+            
+            // Eventos de conexão do banco de dados
+            document.addEventListener('db-connected', () => {
+                dbStatus.textContent = 'Banco de dados local conectado com sucesso.';
+                dbStatus.className = 'status-message status-success';
+                loadDataCounts();
+            });
+            
+            document.addEventListener('db-disconnected', (event) => {
+                dbStatus.textContent = `Erro de conexão com o banco de dados: ${event.detail?.message || 'Desconhecido'}`;
+                dbStatus.className = 'status-message status-error';
+            });
+            
+            // Inicializar aplicativo
+            initializeApp();
+        });
+    </script>
+</body>
+</html> 
