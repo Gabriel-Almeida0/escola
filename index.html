@@ -31,45 +31,36 @@
             <div class="header">
                 <div class="header-top">
                     <h1>Registros Diários</h1>
-                    <div class="date-controls">
-                        <button id="todayButton" class="today-button" title="Voltar para hoje">
-                            <i class="fas fa-calendar-day"></i>
-                            Hoje
-                        </button>
-                        <div class="date-selector">
-                            <input type="date" id="dateSelector" class="date-input">
-                        </div>
-                        <button id="refreshButton" class="refresh-button" title="Atualizar dados">
-                            <i class="fas fa-sync-alt"></i>
-                        </button>
-                    </div>
                 </div>
-                <p class="subtitle">Data selecionada - <span id="currentDate"></span></p>
+                <div class="subtitle">
+                    <span id="currentDate">Carregando...</span>
+                </div>
+                <div class="date-controls">
+                    <div class="date-selector">
+                        <input type="date" id="dateSelector" class="date-input">
+                    </div>
+                    <button id="todayButton" class="today-button">
+                        <i class="fas fa-calendar-day"></i> Hoje
+                    </button>
+                </div>
             </div>
 
-            <div class="filters-section">
-                <div class="filters-container">
-                    <div class="filter-buttons">
-                        <button class="filter-button active" data-filter="all">Todos</button>
-                        <button class="filter-button" data-filter="present">Presentes</button>
-                        <button class="filter-button" data-filter="absent">Ausentes</button>
-                        <button class="filter-button" data-filter="lunch">Só Almoço</button>
-                        <button class="filter-button" data-filter="dinner">Só Jantar</button>
-                        <button class="filter-button" data-filter="both">Ambos</button>
-                        <button class="filter-button" data-filter="none">Nenhum</button>
-                    </div>
+            <div class="filters-container">
+                <div class="filter-buttons">
+                    <button id="allFilter" class="filter-button active">Todos</button>
+                    <button id="presentFilter" class="filter-button">Presentes</button>
+                    <button id="absentFilter" class="filter-button">Ausentes</button>
                 </div>
+            </div>
 
-                <div class="class-filters-container">
-                    <div class="class-filter-buttons">
-                        <button class="class-filter-button active" data-class="">Todas as turmas</button>
-                        <!-- Classes serão adicionadas dinamicamente via JavaScript -->
-                    </div>
+            <div class="class-filters-container">
+                <div class="class-filter-buttons" id="classFilters">
+                    <!-- Class filters will be dynamically added here -->
                 </div>
             </div>
 
             <div class="records-list" id="recordsList">
-                <!-- Registros serão adicionados dinamicamente via JavaScript -->
+                <!-- Records will be dynamically added here -->
                 <div class="empty-container hidden">
                     <p>Nenhum aluno encontrado</p>
                 </div>
@@ -118,8 +109,8 @@
     <script src="js/config.js"></script>
     <script src="js/localdb.js"></script>
     <script src="js/storage.js"></script>
-    <script src="js/dateUtils.js"></script>
     <script src="js/notifications.js"></script>
+    <script src="js/dateUtils.js"></script>
     <script src="js/index.js"></script>
     
     <script>
