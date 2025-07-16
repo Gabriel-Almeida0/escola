@@ -16,7 +16,11 @@ Sistema simples para registros de alunos e controle de refeições/horas extras.
 - IndexedDB para armazenamento local
 - FontAwesome para ícones
 
-## Como executar
+## Demo
+
+Acesse a demonstração online em: [https://gabriel-almeida0.github.io/escola/](https://gabriel-almeida0.github.io/escola/)
+
+## Como executar localmente
 
 1. Clone o repositório
 2. Execute um servidor web local. Exemplo:
@@ -46,4 +50,4 @@ Todos os dados são armazenados apenas no navegador usando IndexedDB, o que sign
 
 - `js/localdb.js`: Sistema de banco de dados local
 - `js/storage.js`: API para manipulação de dados
-- `js/config.js`: Configurações do banco de dados local 
+- `js/config.js`: Configurações do banco de dados local
