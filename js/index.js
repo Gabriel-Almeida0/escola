@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const dateSelector = document.getElementById('dateSelector');
     const emptyContainer = document.querySelector('.empty-container');
     const notificationContainer = document.getElementById('notificationContainer');
+    const studentSearchInput = document.getElementById('studentSearchInput');
     
     // Verificar se o sistema de notificações está disponível
     if (!window.showSuccess || !window.showError) {
@@ -19,6 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let filteredStudents = [];
     let selectedClass = '';
     let selectedFilter = 'all';
+    let searchTerm = '';
     let classes = [];
     
     // CORREÇÃO: Forçar recálculo da data atual a cada inicialização
@@ -102,6 +104,15 @@ document.addEventListener('DOMContentLoaded', function() {
         verifyDateDisplay();
         console.groupEnd();
     });
+    
+    // Student search input event listener
+    if (studentSearchInput) {
+        studentSearchInput.addEventListener('input', function() {
+            searchTerm = this.value.trim();
+            filterStudents();
+            renderRecords();
+        });
+    }
     
     // Função para atualizar a exibição da data na interface
     function updateDateDisplay(dateString) {
@@ -247,6 +258,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     default:
                         return true;
                 }
+            });
+        }
+        
+        // Filter by search term
+        if (searchTerm) {
+            filtered = filtered.filter(student => {
+                const nameMatch = student.name.toLowerCase().includes(searchTerm.toLowerCase());
+                return nameMatch;
             });
         }
         
